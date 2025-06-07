@@ -1,0 +1,113 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 206 27% 95%; /* #F0F4F7 */
+    --foreground: 207 10% 25%; /* Darker gray for better readability on light bg */
+    --card: 0 0% 100%;
+    --card-foreground: 207 10% 25%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 207 10% 25%;
+    --primary: 207 100% 71%; /* #69B4FF */
+    --primary-foreground: 207 100% 25%; /* Darker blue for text on primary */
+    --secondary: 206 20% 88%; /* Lighter gray for secondary elements */
+    --secondary-foreground: 207 10% 25%;
+    --muted: 206 20% 88%;
+    --muted-foreground: 207 10% 45%;
+    --accent: 207 44% 49%; /* #4682B4 */
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 206 20% 80%;
+    --input: 206 20% 80%;
+    --ring: 207 100% 71%;
+    --chart-1: 207 100% 71%; /* Primary */
+    --chart-2: 207 44% 49%;  /* Accent */
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 207 20% 12%; /* Dark blue-gray */
+    --foreground: 0 0% 98%;
+    --card: 207 20% 15%;
+    --card-foreground: 0 0% 98%;
+    --popover: 207 20% 12%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 207 100% 71%; 
+    --primary-foreground: 207 100% 25%;
+    --secondary: 207 20% 25%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 207 20% 25%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 207 44% 60%; /* Lighter accent for dark mode */
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 207 20% 30%;
+    --input: 207 20% 30%;
+    --ring: 207 100% 71%;
+    --chart-1: 207 100% 71%;
+    --chart-2: 207 44% 60%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-inter), sans-serif;
+  }
+}
+
+/* Animation for weather icons */
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.animate-weather-pulse {
+  animation: pulse 2s infinite ease-in-out;
+}
+
+@keyframes gentle-sway {
+  0%, 100% {
+    transform: rotate(-2deg);
+  }
+  50% {
+    transform: rotate(2deg);
+  }
+}
+
+.animate-weather-sway {
+  animation: gentle-sway 3s infinite ease-in-out;
+}

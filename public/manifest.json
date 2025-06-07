@@ -1,0 +1,27 @@
+
+{
+  "name": "WeatherWise",
+  "short_name": "WeatherWise",
+  "description": "Next-gen Weather Forecasting Web App",
+  "icons": [
+    {
+      "src": "https://placehold.co/192x192.png?text=WW",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable",
+      "data-ai-hint": "weather app"
+    },
+    {
+      "src": "https://placehold.co/512x512.png?text=WW",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable",
+      "data-ai-hint": "weather app"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F0F4F7",
+  "theme_color": "#69B4FF",
+  "scope": "/"
+}
