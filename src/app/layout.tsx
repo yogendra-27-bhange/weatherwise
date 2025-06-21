@@ -26,7 +26,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
       <head>
-        <link rel="icon" href="/fevicon.png" type="image/png" />
+        <link rel="icon" href="/final.png" type="image/png" />
         {/* Service Worker Registration Script */}
         <script
           dangerouslySetInnerHTML={{
