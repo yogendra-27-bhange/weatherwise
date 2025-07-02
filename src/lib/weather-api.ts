@@ -1,4 +1,3 @@
-
 import type { CurrentWeatherData, DailyForecastItem, HourlyForecastItem, LocationInfo, WeatherData, NewsItem } from '@/types/weather';
 import { format, addHours, addDays, startOfHour, parseISO, setHours, setMinutes } from 'date-fns';
 
@@ -9,167 +8,122 @@ const OPENWEATHERMAP_API_KEY = process.env.OPENWEATHERMAP_API_KEY;
 const NEWSAPI_API_KEY = process.env.NEWSAPI_API_KEY;
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 
-// --- Mock Data Generation (Fallback) ---
-const mockConditionCodes = ['01d', '02d', '03d', '04d', '09d', '10d', '11d', '13d', '50d'];
-const mockDescriptions: Record<string, string> = {
-  '01': 'Clear Sky', '02': 'Few Clouds', '03': 'Scattered Clouds', '04': 'Broken Clouds',
-  '09': 'Shower Rain', '10': 'Rain', '11': 'Thunderstorm', '13': 'Snow', '50': 'Mist'
-};
-const getRandomElement = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
-const getIsDayMock = (date: Date = new Date()): boolean => {
-  const hour = date.getHours();
-  return hour >= 6 && hour < 18;
-};
-const generateMockCurrentWeather = (location: LocationInfo): CurrentWeatherData => {
-  const now = new Date();
-  const isDay = getIsDayMock(now);
-  const baseCode = getRandomElement(mockConditionCodes).substring(0, 2);
-  const conditionCode = `${baseCode}${isDay ? 'd' : 'n'}`;
-  const sunriseTime = setMinutes(setHours(now, 6), Math.floor(Math.random() * 30) + 15);
-  const sunsetTime = setMinutes(setHours(now, 18), Math.floor(Math.random() * 30) + 30);
-  return {
-    temp: Math.floor(Math.random() * 25) + 5,
-    feelsLike: Math.floor(Math.random() * 25) + 3,
-    humidity: Math.floor(Math.random() * 70) + 30,
-    windSpeed: Math.floor(Math.random() * 30) + 5,
-    uvIndex: Math.floor(Math.random() * 11),
-    description: mockDescriptions[baseCode] || 'Clear Sky',
-    conditionCode: conditionCode,
-    locationName: location.name,
-    observationTime: format(now, "h:mm a, EEEE, MMMM d"),
-    isDay: isDay,
-    sunrise: format(sunriseTime, "h:mm a"),
-    sunset: format(sunsetTime, "h:mm a"),
-    aqi: Math.floor(Math.random() * 150) + 10,
-    pollenCount: Math.floor(Math.random() * 5),
-  };
-};
-const generateMockHourlyForecast = (): HourlyForecastItem[] => {
-  const items: HourlyForecastItem[] = [];
-  let currentTime = startOfHour(new Date());
-  for (let i = 0; i < 24; i++) {
-    const forecastTime = addHours(currentTime, i);
-    const isDay = getIsDayMock(forecastTime);
-    const baseCode = getRandomElement(mockConditionCodes).substring(0, 2);
-    items.push({
-      time: format(forecastTime, 'ha'),
-      temp: Math.floor(Math.random() * 20) + 5,
-      conditionCode: `${baseCode}${isDay ? 'd' : 'n'}`,
-      isDay: isDay,
-    });
-  }
-  return items;
-};
-const generateMockDailyForecast = (): DailyForecastItem[] => {
-  const items: DailyForecastItem[] = [];
-  let currentDate = new Date();
-  for (let i = 0; i < 7; i++) { // Typically 7-day forecast
-    const forecastDate = addDays(currentDate, i);
-    const highTemp = Math.floor(Math.random() * 15) + 10;
-    const baseCode = getRandomElement(mockConditionCodes).substring(0, 2);
-    items.push({
-      date: format(forecastDate, 'EEE, MMM d'),
-      dayName: format(forecastDate, 'EEEE'),
-      shortDate: format(forecastDate, 'M/d'),
-      highTemp: highTemp,
-      lowTemp: highTemp - (Math.floor(Math.random() * 5) + 3),
-      conditionCode: `${baseCode}d`, // Daily usually depicted with day icon
-      description: mockDescriptions[baseCode] || 'Clear Sky',
-    });
-  }
-  return items;
-};
-// --- End of Mock Data Generation ---
-
+// --- MET Norway (Yr.no) API Integration ---
 export const getWeatherData = async (location: LocationInfo): Promise<WeatherData> => {
-  if (!OPENWEATHERMAP_API_KEY || OPENWEATHERMAP_API_KEY === 'YOUR_OPENWEATHERMAP_API_KEY_HERE' || !location.lat || !location.lon) {
-    console.warn("OpenWeatherMap API key not found, is a placeholder, or location lat/lon missing. Falling back to mock weather data.");
-    await delay(500);
-    if (location.name.toLowerCase() === 'error') {
-      throw new Error("Mock API error: Could not fetch weather for 'error'.");
-    }
-    return {
-      current: generateMockCurrentWeather(location),
-      hourly: generateMockHourlyForecast(),
-      daily: generateMockDailyForecast().slice(0, 5), // Dashboard shows 5-day
-    };
+  if (!location.lat || !location.lon) {
+    throw new Error('Location latitude and longitude are required.');
   }
 
-  try {
-    const apiUrl = `https://api.openweathermap.org/data/3.0/onecall?lat=${location.lat}&lon=${location.lon}&exclude=minutely&appid=${OPENWEATHERMAP_API_KEY}&units=metric`;
-    const response = await fetch(apiUrl);
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error("OpenWeatherMap API Error:", errorData);
-      throw new Error(`Weather API error: ${response.statusText} - ${errorData.message}`);
-    }
-    const apiData = await response.json();
+  // MET Norway API endpoint
+  const apiUrl = `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${location.lat}&lon=${location.lon}`;
 
-    let aqiValue: number | undefined = undefined;
-    try {
-        const aqiApiUrl = `https://api.openweathermap.org/data/2.5/air_pollution?lat=${location.lat}&lon=${location.lon}&appid=${OPENWEATHERMAP_API_KEY}`;
-        const aqiResponse = await fetch(aqiApiUrl);
-        if (aqiResponse.ok) {
-            const aqiData = await aqiResponse.json();
-            if (aqiData.list && aqiData.list.length > 0) {
-                const owmAqi = aqiData.list[0].main.aqi;
-                // Standard AQI conversion: 1=Good (0-50), 2=Fair (51-100), 3=Moderate (101-150), 4=Poor (151-200), 5=Very Poor (201-300)
-                // Let's use a simple mapping for display, aiming for a 0-300+ scale roughly
-                const aqiMapping: {[key: number]: number} = { 1: 25, 2: 75, 3: 125, 4: 175, 5: 250 }; // Mid-points of general categories
-                aqiValue = aqiMapping[owmAqi] || owmAqi * 50; // Fallback if unexpected value
-            }
-        } else {
-             console.warn(`AQI API Error: ${aqiResponse.statusText}`);
-        }
-    } catch (aqiError) {
-        console.warn("Could not fetch AQI data:", aqiError);
-    }
+  // Required User-Agent header as per MET Norway API policy
+  const headers = {
+    'User-Agent': 'weatherwise-app/1.0 github.com/yourusername/weatherwise',
+    'Accept': 'application/json',
+  };
 
-    const transformedData: WeatherData = {
-      current: {
-        temp: Math.round(apiData.current.temp),
-        feelsLike: Math.round(apiData.current.feels_like),
-        humidity: apiData.current.humidity,
-        windSpeed: Math.round(apiData.current.wind_speed * 3.6), // m/s to km/h
-        uvIndex: Math.round(apiData.current.uvi),
-        description: apiData.current.weather[0].description.replace(/\b\w/g, (l: string) => l.toUpperCase()),
-        conditionCode: apiData.current.weather[0].icon,
-        locationName: location.name,
-        observationTime: format(new Date(apiData.current.dt * 1000), "h:mm a, EEEE, MMMM d"),
-        isDay: apiData.current.weather[0].icon.includes('d'),
-        sunrise: format(new Date(apiData.current.sunrise * 1000), "h:mm a"),
-        sunset: format(new Date(apiData.current.sunset * 1000), "h:mm a"),
-        aqi: aqiValue,
-        pollenCount: undefined, // Pollen data not standard from OpenWeatherMap OneCall
-      },
-      hourly: apiData.hourly.slice(0, 24).map((hour: any) => ({
-        time: format(new Date(hour.dt * 1000), 'ha'),
-        temp: Math.round(hour.temp),
-        conditionCode: hour.weather[0].icon,
-        isDay: hour.weather[0].icon.includes('d'),
-      })),
-      daily: apiData.daily.slice(0, 7).map((day: any) => ({
-        date: format(new Date(day.dt * 1000), 'EEE, MMM d'),
-        dayName: format(new Date(day.dt * 1000), 'EEEE'),
-        shortDate: format(new Date(day.dt * 1000), 'M/d'),
-        highTemp: Math.round(day.temp.max),
-        lowTemp: Math.round(day.temp.min),
-        conditionCode: day.weather[0].icon,
-        description: day.weather[0].description.replace(/\b\w/g, (l: string) => l.toUpperCase()),
-      })),
-    };
-    return transformedData;
-  } catch (error) {
-    console.error("Failed to fetch or transform real weather data:", error);
-    console.warn("Falling back to mock weather data due to an error.");
-    // Ensure mock data includes a name if location.name is available
-    const mockLoc = location.name ? location : { name: "Unknown Location" };
-    return {
-      current: generateMockCurrentWeather(mockLoc),
-      hourly: generateMockHourlyForecast(),
-      daily: generateMockDailyForecast().slice(0, 5),
-    };
+  const response = await fetch(apiUrl, { headers });
+  if (!response.ok) {
+    throw new Error(`Yr.no API error: ${response.statusText}`);
   }
+  const apiData = await response.json();
+
+  // Helper to find the closest time index
+  const now = new Date();
+  const timeseries = apiData.properties.timeseries;
+  const findClosestIndex = (targetDate: Date) => {
+    let closestIdx = 0;
+    let minDiff = Infinity;
+    for (let i = 0; i < timeseries.length; i++) {
+      const tsDate = new Date(timeseries[i].time);
+      const diff = Math.abs(tsDate.getTime() - targetDate.getTime());
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestIdx = i;
+      }
+    }
+    return closestIdx;
+  };
+
+  // Current weather (closest to now)
+  const currentIdx = findClosestIndex(now);
+  const currentData = timeseries[currentIdx];
+  const instant = currentData.data.instant.details;
+  const next1h = currentData.data.next_1_hours?.summary?.symbol_code || 'clearsky_day';
+  const sunrise = '';
+  const sunset = '';
+
+  // Hourly forecast (next 24 hours)
+  const hourly: HourlyForecastItem[] = timeseries.slice(currentIdx, currentIdx + 24).map(ts => {
+    const details = ts.data.instant.details;
+    const symbol = ts.data.next_1_hours?.summary?.symbol_code || 'clearsky_day';
+    const tsDate = new Date(ts.time);
+    return {
+      time: format(tsDate, 'ha'),
+      temp: Math.round(details.air_temperature),
+      conditionCode: symbol,
+      isDay: symbol.includes('day'),
+    };
+  });
+
+  // Daily forecast (next 7 days)
+  // Group by date, take max/min temp and most frequent symbol
+  const dailyMap: Record<string, { temps: number[]; symbols: string[]; date: Date } > = {};
+  for (let ts of timeseries) {
+    const tsDate = new Date(ts.time);
+    const dayKey = format(tsDate, 'yyyy-MM-dd');
+    if (!dailyMap[dayKey]) {
+      dailyMap[dayKey] = { temps: [], symbols: [], date: tsDate };
+    }
+    if (ts.data.instant.details?.air_temperature !== undefined) {
+      dailyMap[dayKey].temps.push(ts.data.instant.details.air_temperature);
+    }
+    if (ts.data.next_1_hours?.summary?.symbol_code) {
+      dailyMap[dayKey].symbols.push(ts.data.next_1_hours.summary.symbol_code);
+    }
+  }
+  const daily: DailyForecastItem[] = Object.values(dailyMap).slice(0, 7).map(day => {
+    const highTemp = Math.round(Math.max(...day.temps));
+    const lowTemp = Math.round(Math.min(...day.temps));
+    // Most frequent symbol
+    const symbolCounts: Record<string, number> = {};
+    for (let s of day.symbols) symbolCounts[s] = (symbolCounts[s] || 0) + 1;
+    const conditionCode = Object.entries(symbolCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'clearsky_day';
+    return {
+      date: format(day.date, 'EEE, MMM d'),
+      dayName: format(day.date, 'EEEE'),
+      shortDate: format(day.date, 'M/d'),
+      highTemp,
+      lowTemp,
+      conditionCode,
+      description: conditionCode.replace(/_/g, ' '),
+    };
+  });
+
+  // Compose current weather
+  const current: CurrentWeatherData = {
+    temp: Math.round(instant.air_temperature),
+    feelsLike: Math.round(instant.air_temperature), // MET Norway does not provide feels like
+    humidity: Math.round(instant.relative_humidity ?? 0),
+    windSpeed: Math.round(instant.wind_speed ?? 0),
+    uvIndex: Math.round(instant.ultraviolet_index_clear_sky ?? 0),
+    description: next1h.replace(/_/g, ' '),
+    conditionCode: next1h,
+    locationName: location.name,
+    observationTime: format(new Date(currentData.time), "h:mm a, EEEE, MMMM d"),
+    isDay: next1h.includes('day'),
+    sunrise,
+    sunset,
+    aqi: undefined,
+    pollenCount: undefined,
+  };
+
+  return {
+    current,
+    hourly,
+    daily,
+  };
 };
 
 export const searchLocation = async (query: string): Promise<LocationInfo> => {
