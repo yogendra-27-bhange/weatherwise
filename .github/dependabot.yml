@@ -1,0 +1,6 @@
+version: 2
+updates:
+  - package-ecosystem: "npm" # use "pip" for Python, "npm" for JS
+    directory: "/" # root folder
+    schedule:
+      interval: "daily"
