@@ -1,6 +1,9 @@
 # Weatherwise
 
 A modern weather dashboard built with Next.js. Get forecasts, weather news, outfit advice, and more—all in one place.
+## 🌐 Live Website
+👉 [Click here to visit WeatherWise](https://weatherwise-yy.netlify.app/)
+
 
 ## Features
 - 7-day and hourly weather forecasts
